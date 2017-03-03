@@ -11,8 +11,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 mongoose.connect(process.env.MONGODB_URI);
 
-var index = require('./routes/index');
-var users = require('./routes/users');
+
 
 var app = express();
 
@@ -31,8 +30,14 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+var index = require('./routes/index');
+var users = require('./routes/users');
+const authRoutes = require('./routes/auth-routes.js');
 app.use('/', index);
 app.use('/users', users);
+app.use('/', authRoutes);
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
