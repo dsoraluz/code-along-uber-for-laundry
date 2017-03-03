@@ -10,57 +10,52 @@ authRoutes.get('/signup', (req,res,next)=>{
   });
 });
 
-//Post route for signup form submission
-authRoutes.post('/signup',(req,res,next)=>{
+//Post route for signup
+authRoutes.post('/signup', (req, res, next) => {
   const nameInput = req.body.name;
   const emailInput = req.body.email;
   const passwordInput = req.body.password;
 
-  if (emailInput === '' || passwordInput ===''){
-    res.render('auth/signup-view.ejs', {
-      errorMessage: 'Please fill out both username and password foo\'!'
+  if (emailInput === '' || passwordInput === '') {
+    res.render('auth/signup', {
+      errorMessage: 'Enter both email and password to sign up.'
     });
     return;
   }
 
-  //Checks to see if user exists.//logic now resides in the callback function
-  User.findOne({ email: emailInput}, '_id',(err,existingUser)=>{
-    if(err){
+  User.findOne({ email: emailInput }, '_id', (err, existingUser) => {
+    if (err) {
       next(err);
       return;
     }
-    //If the foundUser is not null (meaning it does have something),render
-    // page with error message and early return.
-    if(existingUser !== null){
-      res.render('auth/signup-view.ejs', {
-        errorMessage: 'The username already exists'
+
+    if (existingUser !== null) {
+      res.render('auth/signup', {
+        errorMessage: `The email ${emailInput} is already in use.`
       });
       return;
     }
-    // if username does not exist, continue with usercreation.
-    const salt = bcrypt.genSaltSync(10);
-    const hashPass = bcrypt.hashSync(passwordInput, salt);
 
-    //create userinfo with hashed password
-    const userInfo = {
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPass = bcrypt.hashSync(passwordInput, salt);
+
+    const userSubmission = {
       name: nameInput,
       email: emailInput,
-      password: hashPass
+      password: hashedPass
     };
-    //Create user object with user model using entered userInfo (username and password)
-    const theUser = new User(userInfo);
 
-    theUser.save((err)=>{
-      if(err){
-        res.render('auth/signup-view.ejs',{errorMessage: 'Oops! There was a problem saving. Try again later.'});
+    const theUser = new User(userSubmission);
+
+    theUser.save((err) => {
+      if (err) {
+        res.render('auth/signup', {
+          errorMessage: 'Something went wrong. Try again later.'
+        });
         return;
-      }else{
-        //can be whatever message (ok, okMessage, success)
-        //          |
-        req.flash('success','You have been registered. Try logging in.');
-        res.redirect('/');
       }
 
+      res.redirect('/');
     });
   });
 });

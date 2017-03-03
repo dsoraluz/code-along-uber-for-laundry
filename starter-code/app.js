@@ -7,6 +7,10 @@ var bodyParser = require('body-parser');
 const expressLayouts = require('express-ejs-layouts');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const session = require('express-session');
+const flash = require('connect-flash');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
 
 dotenv.config();
 mongoose.connect(process.env.MONGODB_URI);
@@ -29,6 +33,50 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  secret: 'uber for laundry and stuff pls',
+  resave: true,
+  saveUnitialized: true
+}));
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+// <input type="email"  name="email" id="email-input">
+//
+//
+//
+
+//Local strategy - authentication is comming from internal check of records.
+passport.use(new LocalStrategy((email, password, next) => {
+  //Check first if the database has an entry with that username.
+  User.findOne({ email: email }, (err, user) => {
+    if (err) {
+      return next(err);
+    }
+    //if user exists (fail) (authentication failed)--(error message)
+    else if (!user) {
+      return next(null, false, { message: "Incorrect username" });
+    }//If password does not match
+    else if (!bcrypt.compareSync(password, user.encryptedPassword)) {
+      return next(null, false, { message: "Incorrect password" });
+    }else{
+      //Retutn the user that we found.
+      next(null, user);
+    }
+
+  });
+}));
+
+passport.serializeUser((user, cb)=>{
+  cb(null, user._id);
+});
+
+passport.deserializeUser((id, cb) => {
+  User.findOne({ "_id": id }, (err, user) => {
+    if (err) { return cb(err); }
+    cb(null, user);
+  });
+});
 
 var index = require('./routes/index');
 var users = require('./routes/users');
